@@ -98,7 +98,15 @@ export class ConnectionService {
 
             const numbers = Object.keys(progress_json)
 
-            const count_progress = `Contatos com sucesso ( ${numbers.length} ) último enviado ( ${number} )`
+            const count_total_contacts_string = await this.shipping_content.getContacts()
+
+            const count_total_contacts = count_total_contacts_string.split('\n')
+
+            const count_contacts_enviting = count_total_contacts.length - numbers.length
+
+            const timing_enviting =  Math.floor(((count_contacts_enviting * this.time_per_msg) / 1000) / 60)
+            
+            const count_progress = `Contatos com sucesso ( ${numbers.length} ) último enviado ( ${number} ) finaliza em ( ${timing_enviting} min )`
 
             await writeFile(`${cwd()}/Envio_Andamento.txt`, count_progress)
 
