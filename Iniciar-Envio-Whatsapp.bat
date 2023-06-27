@@ -1,1 +1,1 @@
-start /B cmd /C npm i && npm run start
+start /B cmd /C npm i && npm run build && npm run start:prod
