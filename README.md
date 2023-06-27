@@ -1,73 +1,110 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Automação Whatsapp
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Esse projeto foi pensado e construído com o intuito de envio de mensagens em massa no Whatsapp Web
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Funcionamento e interface
 
-## Description
+<img src="readme/Inicial.png"/>
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-## Installation
+> **Antes de tudo, sempre que você inicia-lo irá abrir essas duas telas acima, na primeira solicitando que escaneie o código e na segunda qual método de envio**
 
-```bash
-$ npm install
-```
+- ### Preparação do Sistema
 
-## Running the app
+<details><summary>Instalando o Python</summary>
 
-```bash
-# development
-$ npm run start
+> Para que o programa inicie precisamos de um compilador do código chamado [python](https://www.python.org/downloads/) clique em download Python como na imagem abaixo:
 
-# watch mode
-$ npm run start:dev
+<img src="readme/python.png"/>
 
-# production mode
-$ npm run start:prod
-```
+> Execute o instalador e clique em "Add python to PATH" e logo depois em install now e continuar avançando sem medo
 
-## Test
+<img src="readme/install_python.jpg"/>
 
-```bash
-# unit tests
-$ npm run test
+</details>
+<details><summary>Instalando o Sistema</summary>
 
-# e2e tests
-$ npm run test:e2e
 
-# test coverage
-$ npm run test:cov
-```
+> Primeiro passo abra seu terminal de preferência e vá para o diretório de onde baixou a pasta e digite os seguintes comandos:
+ ```bash 
+ pip install selenium
+ pip install webdrive_manager
+ ```
+ - **OBS: faça o download dos arquivos do projeto**
 
-## Support
+</details>
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- ### Como usar e enviar as mensagens?
 
-## Stay in touch
+Agora com tudo pronto podemos ir para a Utilização do Sistema!
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+<details><summary>Pessoas</summary>
 
-## License
+> Para adicionar as pessoa que você quer enviar, abra o txt `Nomes.txt` e coloque-os **linha a linha**
+> Coloque os numeros sem o dígito 9, ex: 6187654321
 
-Nest is [MIT licensed](LICENSE).
+<img src="readme/Pessoas.png"/>
+
+</details>
+
+<details><summary>Mensagem</summary>
+
+## Preparando Mensagem
+> Abra o `Mensagem.txt` e escreva a mensagem a ser enviada, **Não esqueça de salvar**
+
+<img src="readme/Mensagem.png"/>
+
+## Enviando mensagem
+
+> Dê dois cliques no arquivo `Mensagem_zap_mozila.py` e envie 1
+
+<img src="readme/Enviar_mensagem.png"/>
+
+> Logo depois irá abrir a página do whatsapp scaneie e depois volte para o terminal e aperte `ENTER`
+
+<img src="readme/Inicio.png"/>
+
+</details>
+
+<details><summary>Mensagem e Arquivo</summary>
+
+## Preparando Mensagem
+> Abra o `Mensagem.txt` e escreva a mensagem a ser enviada, **Não esqueça de salvar**
+
+<img src="readme/Mensagem.png"/>
+
+## Preparando Arquivo
+> Abra o `Promoção.txt` e copie o diretório da pasta como mostrado abaixo:
+
+<img src="readme/arquivo.png"/>
+
+> Inverta as barras `\` pela `/` e coloque o nome do arquivo com a extenção
+
+<img src="readme/promocao.png"/>
+
+## Enviando mensagem
+
+> Dê dois cliques no arquivo `Mensagem_zap.py` e envie 2
+
+<img src="readme/Enviar_mensagem.png"/>
+
+> Logo depois irá abrir a página do whatsapp scaneie e depois volte para o terminal e aperte `ENTER`
+
+<img src="readme/Inicio.png"/>
+
+</details>
+
+<details><summary>Erros e Pesquisa</summary>
+
+**Em Breve escreverei sobre!**
+
+</details>
+
+<details><summary>Envio_andamento</summary>
+
+> O txt `Envio_andamento.py` é onde fica armazenado os contatos pecorridos pela execução, sempre aparecer o último contato enviado
+>Caso a aplicação tenha parado por algum motivo, vá em `Nomes.txt` e tire ele e todos os de cima da lista, salve-o
+
+<img src="readme/andamento.png"/>
+
+</details>
