@@ -1,0 +1,1 @@
+start /B cmd /C npm i && npm run start
