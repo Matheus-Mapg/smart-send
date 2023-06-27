@@ -16,6 +16,8 @@ export class ConnectionService {
 
     connection: ReturnType<typeof makeWASocket>
 
+    time_per_msg = 5 * 1000
+
     constructor(private readonly start: StartSending, private readonly shipping_content: ShippingContent) { }
 
     async connect() {
@@ -94,6 +96,12 @@ export class ConnectionService {
 
             progress_json[number] = new Date()
 
+            const numbers = Object.keys(progress_json)
+
+            const count_progress = `Contatos com sucesso ( ${numbers.length} ) último enviado ( ${number} )`
+
+            await writeFile(`${cwd()}/Envio_Andamento.txt`, count_progress)
+
             await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify(progress_json), { encoding: 'utf-8' })
         }
 
@@ -141,7 +149,7 @@ export class ConnectionService {
 
             this.finshed(number_format)
             
-            await setTimeout(10000)
+            await setTimeout(this.time_per_msg)
 
         }
     }
@@ -187,7 +195,7 @@ export class ConnectionService {
 
             this.finshed(number_format)
             
-            await setTimeout(10000)
+            await setTimeout(this.time_per_msg)
         }
     }
 
@@ -224,7 +232,7 @@ export class ConnectionService {
 
             this.finshed(number_format)
             
-            await setTimeout(10000)
+            await setTimeout(this.time_per_msg)
         }
     }
 
