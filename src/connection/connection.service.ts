@@ -106,7 +106,8 @@ export class ConnectionService {
 
             const timing_enviting =  Math.floor(((count_contacts_enviting * this.time_per_msg) / 1000) / 60)
             
-            const count_progress = `Contatos com sucesso ( ${numbers.length} ) último enviado ( ${number} ) finaliza em ( ${timing_enviting} min )`
+            const count_progress = `Contatos com sucesso ( ${numbers.length} ) último enviado ( ${number} ) finaliza em ( ${timing_enviting} min )` +
+            `\nTotal de Contatos ( ${count_total_contacts.length} )`
 
             await writeFile(`${cwd()}/Envio_Andamento.txt`, count_progress)
 
