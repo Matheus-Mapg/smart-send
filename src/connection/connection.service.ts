@@ -46,18 +46,7 @@ export class ConnectionService {
 
                 }
                 else if (events['connection.update'].connection == 'open') {
-                    const value = await this.start.interact()
-
-                    switch (value) {
-                        case 1: await this.send_message()
-                            break
-
-                        case 2: await this.send_file()
-                            break
-
-                        case 3: await this.send_message_file()
-                            break
-                    }
+                    await this.generateMenu()
 
                     await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
 
@@ -72,6 +61,26 @@ export class ConnectionService {
                 await saveCreds()
             }
         })
+    }
+
+    async generateMenu() {
+        const value = await this.start.interact()
+
+        switch (value) {
+            case 1: await this.send_message()
+                break
+
+            case 2: await this.send_file()
+                break
+
+            case 3: await this.send_message_file()
+                break
+
+            case 4: 
+                await this.clearProgress()
+                await this.generateMenu()
+                break
+        }
     }
 
     sendding(number) {
@@ -104,10 +113,10 @@ export class ConnectionService {
 
             const count_contacts_enviting = count_total_contacts.length - numbers.length
 
-            const timing_enviting =  Math.floor(((count_contacts_enviting * this.time_per_msg) / 1000) / 60)
-            
+            const timing_enviting = Math.floor(((count_contacts_enviting * this.time_per_msg) / 1000) / 60)
+
             const count_progress = `Contatos com sucesso ( ${numbers.length} ) último enviado ( ${number} ) finaliza em ( ${timing_enviting} min )` +
-            `\nTotal de Contatos ( ${count_total_contacts.length} )`
+                `\nTotal de Contatos ( ${count_total_contacts.length} )`
 
             await writeFile(`${cwd()}/Envio_Andamento.txt`, count_progress)
 
@@ -122,7 +131,7 @@ export class ConnectionService {
 
     }
 
-    async isEnvited(number){
+    async isEnvited(number) {
         try {
             var progress = await readFileAssync(`${cwd()}/progress-envited.json`, { encoding: 'utf-8' })
 
@@ -130,7 +139,7 @@ export class ConnectionService {
             progress = null
         }
 
-        return !!progress && ( !!JSON.parse(progress)[number] )
+        return !!progress && (!!JSON.parse(progress)[number])
     }
 
     async send_message() {
@@ -146,7 +155,7 @@ export class ConnectionService {
 
             const isEnvited = await this.isEnvited(number_format)
 
-            if( isEnvited ) continue
+            if (isEnvited) continue
 
             this.sendding(number_format)
 
@@ -157,7 +166,7 @@ export class ConnectionService {
             await this.connection.waitForMessage(message_text.key.id)
 
             this.finshed(number_format)
-            
+
             await setTimeout(this.time_per_msg)
 
         }
@@ -180,7 +189,7 @@ export class ConnectionService {
 
             const isEnvited = await this.isEnvited(number_format)
 
-            if( isEnvited ) continue
+            if (isEnvited) continue
 
             this.sendding(number_format)
 
@@ -203,7 +212,7 @@ export class ConnectionService {
             }
 
             this.finshed(number_format)
-            
+
             await setTimeout(this.time_per_msg)
         }
     }
@@ -223,7 +232,7 @@ export class ConnectionService {
 
             const isEnvited = await this.isEnvited(number_format)
 
-            if( isEnvited ) continue
+            if (isEnvited) continue
 
             this.sendding(number_format)
 
@@ -240,7 +249,7 @@ export class ConnectionService {
             }
 
             this.finshed(number_format)
-            
+
             await setTimeout(this.time_per_msg)
         }
     }
@@ -277,6 +286,10 @@ export class ConnectionService {
                 resolve(data)
             })
         })
+    }
+
+    async clearProgress() {
+        await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
     }
 }
 

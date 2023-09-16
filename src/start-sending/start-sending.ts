@@ -20,7 +20,12 @@ export class StartSending {
                 {
                     name: 'Arquivo e Texto',
                     value: 3
+                },
+                {
+                    name: 'Limpar progresso',
+                    value: 4
                 }
+
             ]
         })
 

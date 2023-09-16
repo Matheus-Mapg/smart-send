@@ -38,6 +38,7 @@ lerna-debug.log*
 *.jpeg
 *.png
 instance/**
+Documentos/**
 update-contact.json
 progress-envited.json
 *.txt
