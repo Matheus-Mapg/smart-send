@@ -17,7 +17,7 @@ export class ConnectionService {
 
     time_per_msg = 5 * 1000
 
-    private autoFreshContacts: boolean = false
+    private autoFreshContacts: boolean = true
 
     private isInitShipping: boolean = false
 
@@ -111,11 +111,8 @@ export class ConnectionService {
 
                 for (const iterator of events['contacts.upsert']) {
                     const number = iterator.id.split('@')[0]
-                    console.log('\n Escrevendo número ...')
 
                     await this.insertContact(number)
-
-                    console.log('\n Escrita finalizada ...')
                 }
 
 
@@ -127,17 +124,15 @@ export class ConnectionService {
             }
 
             if (events['messages.upsert']) {
+                this.isContactProcessing = true
 
                 for (const iterator of events['messages.upsert'].messages) {
 
 
-                    if (iterator?.key?.remoteJid?.includes('@s.whatsapp.net')) {
-                        const number = iterator?.key?.remoteJid?.split('@')[0]
 
-                        console.log('\n Escrevendo número ...')
-                        // console.log('\n ', number)
+                    if (iterator?.key?.remoteJid?.includes('@s.whatsapp.net') && !iterator?.key?.fromMe) {
+                        const number = iterator?.key?.remoteJid?.split('@')[0]
                         await this.insertContact(number)
-                        console.log('\n Escrita finalizada ...')
                     }
                 }
 
@@ -173,6 +168,8 @@ export class ConnectionService {
                 await this.generateMenu()
                 break
         }
+
+        this.isShippingProcessing = false
     }
 
     async inProgressMenu() {
@@ -193,6 +190,8 @@ export class ConnectionService {
     }
 
     async shutdown() {
+
+        this.stop && console.log('... a finalizar', this.isContactProcessing, this.isShippingProcessing, !this.stop)
 
         if (this.isContactProcessing || this.isShippingProcessing || !this.stop) {
 
@@ -332,12 +331,13 @@ export class ConnectionService {
 
                 const file_format = file.replace('\r', '')
 
-                const path_file = `${cwd()}/${file_format}`
+                if (!!file_format.trim()) {
+                    const path_file = `${cwd()}/${file_format}`
 
-                const mimetype = mime.lookup(extname(path_file))
+                    const mimetype = mime.lookup(extname(path_file))
 
-                await this.prepareSendFiles(path_file, mimetype, number_format)
-
+                    await this.prepareSendFiles(path_file, mimetype, number_format)
+                }
             }
 
             this.finshed(number_format)
@@ -375,11 +375,13 @@ export class ConnectionService {
 
                 const file_format = file.replace('\r', '')
 
-                const path_file = `${cwd()}/${file_format}`
+                if (!!file_format.trim()) {
+                    const path_file = `${cwd()}/${file_format}`
 
-                const mimetype = mime.lookup(extname(path_file))
+                    const mimetype = mime.lookup(extname(path_file))
 
-                await this.prepareSendFiles(path_file, mimetype, number_format)
+                    await this.prepareSendFiles(path_file, mimetype, number_format)
+                }
 
             }
 
@@ -499,4 +501,3 @@ export class ConnectionService {
     }
 
 }
-
