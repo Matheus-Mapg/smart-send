@@ -4,18 +4,20 @@ import select from '@inquirer/select';
 @Injectable()
 export class StartSending {
 
-    async interact(){
+    async interact() {
+
+        console.clear()
 
         return await select({
             message: 'Deseja que o envio seja feito com:',
             choices: [
                 {
                     name: 'Somente Mensagem',
-                    value: 1 
+                    value: 1
                 },
                 {
                     name: 'Somente Arquivo',
-                    value: 2 
+                    value: 2
                 },
                 {
                     name: 'Arquivo e Texto',
@@ -30,5 +32,5 @@ export class StartSending {
         })
 
     }
-    
+
 }

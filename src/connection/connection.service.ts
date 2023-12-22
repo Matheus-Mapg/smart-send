@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import makeWASocket, { fetchLatestBaileysVersion, useMultiFileAuthState } from '@whiskeysockets/baileys';
 import { readFile } from 'fs';
-import { readFile as readFileAssync, writeFile } from 'fs/promises';
-import { url } from 'inspector';
+import { access, readFile as readFileAssync, writeFile } from 'fs/promises';
 const mime = require('mime-types')
-import { extname, resolve } from 'path';
+import { extname } from 'path';
 import Log from 'pino'
 import { cwd } from 'process';
 import { ShippingContent } from 'src/shipping-content/shipping-content';
@@ -18,9 +17,44 @@ export class ConnectionService {
 
     time_per_msg = 5 * 1000
 
+    private initShipping: boolean = false
+
     constructor(private readonly start: StartSending, private readonly shipping_content: ShippingContent) { }
 
+    async initFiles() {
+
+        try {
+            await access(`${cwd()}/Nomes.txt`)
+
+        } catch (error) {
+            await writeFile(`${cwd()}/Nomes.txt`, '')
+        }
+
+        try {
+            await access(`${cwd()}/Promoção.txt`)
+
+        } catch (error) {
+            await writeFile(`${cwd()}/Promoção.txt`, '')
+        }
+
+        try {
+            await access(`${cwd()}/Mensagem.txt`)
+
+        } catch (error) {
+            await writeFile(`${cwd()}/Mensagem.txt`, '')
+        }
+
+        try {
+            await access(`${cwd()}/Remover.txt`)
+
+        } catch (error) {
+            await writeFile(`${cwd()}/Remover.txt`, '')
+        }
+    }
+
     async connect() {
+
+        await this.initFiles()
 
         const { state, saveCreds } = await useMultiFileAuthState(`instance`)
         const { version } = await fetchLatestBaileysVersion()
@@ -60,11 +94,51 @@ export class ConnectionService {
             if (events['creds.update']) {
                 await saveCreds()
             }
+
+
+            if (events['contacts.upsert']) {
+
+                for (const iterator of events['contacts.upsert']) {
+                    const number = iterator.id.split('@')[0]
+                    console.log('\n Escrevendo número ...')
+
+                    await this.insertContact(number)
+
+                    console.log('\n Escrita finalizada ...')
+                }
+
+                !this.initShipping && this.generateMenu()
+
+                await this.syncContacts()
+            }
+
+            if (events['messages.upsert']) {
+
+                for (const iterator of events['messages.upsert'].messages) {
+
+
+                    if (iterator?.key?.remoteJid?.includes('@s.whatsapp.net')) {
+                        const number = iterator?.key?.remoteJid?.split('@')[0]
+
+                        console.log('\n Escrevendo número ...')
+                        // console.log('\n ', number)
+                        await this.insertContact(number)
+                        console.log('\n Escrita finalizada ...')
+                    }
+                }
+
+                !this.initShipping && this.generateMenu()
+
+                await this.syncContacts()
+            }
+
         })
     }
 
     async generateMenu() {
         const value = await this.start.interact()
+
+        this.initShipping = true
 
         switch (value) {
             case 1: await this.send_message()
@@ -76,7 +150,7 @@ export class ConnectionService {
             case 3: await this.send_message_file()
                 break
 
-            case 4: 
+            case 4:
                 await this.clearProgress()
                 await this.generateMenu()
                 break
@@ -132,6 +206,8 @@ export class ConnectionService {
     }
 
     async isEnvited(number) {
+        console.clear()
+
         try {
             var progress = await readFileAssync(`${cwd()}/progress-envited.json`, { encoding: 'utf-8' })
 
@@ -291,5 +367,75 @@ export class ConnectionService {
     async clearProgress() {
         await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
     }
+
+    async insertContact(contact) {
+
+        try {
+            var update_contacts = await readFileAssync(`${cwd()}/update-contact.json`, { encoding: 'utf-8' })
+
+        } catch (error) {
+            update_contacts = null
+        }
+
+        if (update_contacts) {
+
+            const contacts_key = JSON.parse(update_contacts)
+
+            contacts_key[contact] = new Date()
+
+            await writeFile(`${cwd()}/update-contact.json`, JSON.stringify(contacts_key))
+        }
+        else {
+            await writeFile(`${cwd()}/update-contact.json`, JSON.stringify({ [contact]: new Date() }))
+        }
+
+    }
+
+    async syncContacts() {
+        try {
+            var update_contacts = await readFileAssync(`${cwd()}/update-contact.json`, { encoding: 'utf-8' })
+
+        } catch (error) {
+            update_contacts = null
+        }
+
+        try {
+            var remove_contacts_string = await readFileAssync(`${cwd()}/Remover.txt`, { encoding: 'utf-8' })
+
+        } catch (error) {
+            remove_contacts_string = null
+        }
+
+        if (update_contacts) {
+
+            let contacts_txt = ''
+
+            const contacts_key = JSON.parse(update_contacts)
+
+            if (remove_contacts_string) {
+                var remove_contacts = remove_contacts_string.split('\n')
+
+                remove_contacts = remove_contacts.map(e => e.replace('\r', ''))
+
+            }
+
+            for (const number in contacts_key) {
+
+                if (remove_contacts?.find(e => e == number)) {
+                    continue
+                }
+
+                if (!contacts_txt) {
+                    contacts_txt += `${number}`
+                }
+                else {
+                    contacts_txt += `\n${number}`
+                }
+            }
+
+            await writeFile(`${cwd()}/Nomes.txt`, contacts_txt, { encoding: 'utf-8' })
+        }
+    }
+
 }
 

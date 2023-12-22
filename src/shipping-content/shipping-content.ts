@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { readFile } from 'fs/promises';
+import { cwd } from 'process';
 
 @Injectable()
 export class ShippingContent {
 
-    path_contacts = 'C:/Users/User/Desktop/Envio_Auto'
+    path_contacts = `${cwd()}`
 
     async getContacts(): Promise<string> {
         try {
