@@ -33,4 +33,21 @@ export class StartSending {
 
     }
 
+    async inProgress() {
+        return await select({
+            message: 'Deseja parar os envios?',
+            choices: [
+                {
+                    name: 'Parar',
+                    value: 1
+                },
+                {
+                    name: 'Finalizar (Apagar Progresso!!!!!!!)',
+                    value: 2
+                }
+
+            ]
+        })
+    }
+
 }

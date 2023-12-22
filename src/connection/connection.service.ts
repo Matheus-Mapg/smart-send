@@ -5,7 +5,7 @@ import { access, readFile as readFileAssync, writeFile } from 'fs/promises';
 const mime = require('mime-types')
 import { extname } from 'path';
 import Log from 'pino'
-import { cwd } from 'process';
+import { cwd, exit } from 'process';
 import { ShippingContent } from 'src/shipping-content/shipping-content';
 import { StartSending } from 'src/start-sending/start-sending';
 import { setTimeout } from 'timers/promises';
@@ -17,7 +17,16 @@ export class ConnectionService {
 
     time_per_msg = 5 * 1000
 
-    private initShipping: boolean = false
+    private autoFreshContacts: boolean = false
+
+    private isInitShipping: boolean = false
+
+    private isShippingProcessing = false
+    private isContactProcessing = false
+
+    private stop: boolean = false
+
+    private clear: boolean = false
 
     constructor(private readonly start: StartSending, private readonly shipping_content: ShippingContent) { }
 
@@ -98,6 +107,8 @@ export class ConnectionService {
 
             if (events['contacts.upsert']) {
 
+                this.isContactProcessing = true
+
                 for (const iterator of events['contacts.upsert']) {
                     const number = iterator.id.split('@')[0]
                     console.log('\n Escrevendo número ...')
@@ -107,9 +118,12 @@ export class ConnectionService {
                     console.log('\n Escrita finalizada ...')
                 }
 
-                !this.initShipping && this.generateMenu()
 
-                await this.syncContacts()
+                !this.isInitShipping && this.generateMenu()
+
+                this.autoFreshContacts && await this.syncContacts()
+
+                this.isContactProcessing = false
             }
 
             if (events['messages.upsert']) {
@@ -127,20 +141,24 @@ export class ConnectionService {
                     }
                 }
 
-                !this.initShipping && this.generateMenu()
+                !this.isInitShipping && this.generateMenu()
 
-                await this.syncContacts()
+                this.autoFreshContacts && await this.syncContacts()
+
+                this.isContactProcessing = false
             }
 
         })
     }
 
     async generateMenu() {
-        const value = await this.start.interact()
+        const optionShipping = await this.start.interact()
 
-        this.initShipping = true
+        this.isInitShipping = true
 
-        switch (value) {
+        this.shutdown()
+
+        switch (optionShipping) {
             case 1: await this.send_message()
                 break
 
@@ -157,10 +175,35 @@ export class ConnectionService {
         }
     }
 
+    async inProgressMenu() {
+        const optionInProgress = await this.start.inProgress()
+
+        switch (optionInProgress) {
+
+            case 1: this.stop = true; break
+
+            case 2: this.stop = true; this.clear = true; break
+        }
+    }
+
     sendding(number) {
         console.log()
         console.log(' Enviando...')
         console.table({ numero: number })
+    }
+
+    async shutdown() {
+
+        if (this.isContactProcessing || this.isShippingProcessing || !this.stop) {
+
+            await setTimeout(1000)
+
+            await this.shutdown()
+        }
+
+        this.clear && await this.clearProgress()
+
+        this.stop && exit()
     }
 
     async finshed(number) {
@@ -219,6 +262,8 @@ export class ConnectionService {
     }
 
     async send_message() {
+        this.inProgressMenu()
+
         const contacts_string = await this.shipping_content.getContacts()
 
         const contacts = contacts_string.split('\n')
@@ -226,6 +271,8 @@ export class ConnectionService {
         const message = await this.shipping_content.getContent()
 
         for (const number of contacts) {
+
+            this.isShippingProcessing = true
 
             const number_format = number.replace(/[^0-9]/g, '')
 
@@ -242,6 +289,8 @@ export class ConnectionService {
             await this.connection.waitForMessage(message_text.key.id)
 
             this.finshed(number_format)
+
+            this.isShippingProcessing = false
 
             await setTimeout(this.time_per_msg)
 
@@ -249,6 +298,8 @@ export class ConnectionService {
     }
 
     async send_message_file() {
+        this.inProgressMenu()
+
         const contacts_string = await this.shipping_content.getContacts()
 
         const contacts = contacts_string.split('\n')
@@ -260,6 +311,8 @@ export class ConnectionService {
         const files = files_string.split('\n')
 
         for (const number of contacts) {
+
+            this.isShippingProcessing = true
 
             const number_format = number.replace(/[^0-9]/g, '')
 
@@ -289,11 +342,15 @@ export class ConnectionService {
 
             this.finshed(number_format)
 
+            this.isShippingProcessing = false
+
             await setTimeout(this.time_per_msg)
         }
     }
 
     async send_file() {
+        this.inProgressMenu()
+
         const contacts_string = await this.shipping_content.getContacts()
 
         const contacts = contacts_string.split('\n')
@@ -303,6 +360,8 @@ export class ConnectionService {
         const files = files_string.split('\n')
 
         for (const number of contacts) {
+
+            this.isShippingProcessing = true
 
             const number_format = number.replace(/[^0-9]/g, '')
 
@@ -325,6 +384,8 @@ export class ConnectionService {
             }
 
             this.finshed(number_format)
+
+            this.isShippingProcessing = false
 
             await setTimeout(this.time_per_msg)
         }
