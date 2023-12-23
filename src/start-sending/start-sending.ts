@@ -26,6 +26,10 @@ export class StartSending {
                 {
                     name: 'Limpar progresso',
                     value: 4
+                },
+                {
+                    name: 'Desligar sistema',
+                    value: 5
                 }
 
             ]

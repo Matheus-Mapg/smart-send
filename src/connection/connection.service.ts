@@ -71,10 +71,10 @@ export class ConnectionService {
         this.connection = makeWASocket({
             version,
             auth: state,
-            generateHighQualityLinkPreview: true,
+            generateHighQualityLinkPreview: false,
             logger: Log({ level: 'silent' }).child(['debug']),
             printQRInTerminal: true,
-            syncFullHistory: false
+            syncFullHistory: true
         })
 
 
@@ -116,7 +116,7 @@ export class ConnectionService {
                 }
 
 
-                !this.isInitShipping && this.generateMenu()
+                // !this.isInitShipping && this.generateMenu()
 
                 this.autoFreshContacts && await this.syncContacts()
 
@@ -136,7 +136,7 @@ export class ConnectionService {
                     }
                 }
 
-                !this.isInitShipping && this.generateMenu()
+                // !this.isInitShipping && this.generateMenu()
 
                 this.autoFreshContacts && await this.syncContacts()
 
@@ -167,8 +167,12 @@ export class ConnectionService {
                 await this.clearProgress()
                 await this.generateMenu()
                 break
+            
+            case 5: this.stop = true; break
+
         }
 
+        this.isInitShipping = false
         this.isShippingProcessing = false
     }
 
