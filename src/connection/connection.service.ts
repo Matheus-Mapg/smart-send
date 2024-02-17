@@ -130,7 +130,7 @@ export class ConnectionService {
 
 
 
-                    if (iterator?.key?.remoteJid?.includes('@s.whatsapp.net') && !iterator?.key?.fromMe) {
+                    if (iterator?.key?.remoteJid?.includes('@s.whatsapp.net')) {
                         const number = iterator?.key?.remoteJid?.split('@')[0]
                         await this.insertContact(number)
                     }
