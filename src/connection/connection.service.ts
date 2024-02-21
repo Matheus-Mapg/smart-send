@@ -63,13 +63,24 @@ export class ConnectionService {
     }
 
     async migrationContacts(){
-        const migrationContactsCSV = await readFileAssync(`${cwd()}/contacts.csv`, { encoding: 'utf-8' })
+        const pathContact = `${cwd()}/contacts.csv`
+
+        try {
+            await access(pathContact)
+        }
+        catch (e) {
+            return
+        }
+
+        const migrationContactsCSV = await readFileAssync(pathContact, { encoding: 'utf-8' })
+
         const migrationContacts = migrationContactsCSV.split(',')
         .map(e => e.includes(':') ? e.split(':') : e).flat(2)
         .map(e => e.replace(/[^\d]/g,''))
         .filter(e => e.length >= 8)
 
         const contactsOnWhatsapp = []
+
         const existsWhatsapp = await this.connection.onWhatsApp(...migrationContacts)
 
         for(const contact of existsWhatsapp){
@@ -79,16 +90,20 @@ export class ConnectionService {
             }
         }
 
-        console.log('Encontrados (Whathsapp):', contactsOnWhatsapp.length)
-        console.log('Total:', migrationContacts.length)
-        console.log('Nao encontrados:', migrationContacts.filter(e => !contactsOnWhatsapp.find(numb => e.includes(numb.substring(4,12)))).length)
+        const notFound = migrationContacts.filter(e => !contactsOnWhatsapp.find(numb => e.includes(numb.substring(4,12))))
+        let message = 'Encontrados (Whathsapp): ' + contactsOnWhatsapp.length
+        + '\nTotal: ' + migrationContacts.length
+        + '\nNao encontrados: ' + notFound.length 
+        + '\n'
 
+        for(const numb of notFound) message = message.concat('\n\t- ' + numb)
+
+        await writeFile(`${cwd()}/Importacao.txt`, message)
     }
 
     async connect() {
 
         await this.initFiles()
-
 
         const { state, saveCreds } = await useMultiFileAuthState(`instance`)
         const { version } = await fetchLatestBaileysVersion()
@@ -115,11 +130,11 @@ export class ConnectionService {
                 else if (events['connection.update'].connection == 'open') {
                     this.migrationContacts()
 
-                    // await this.generateMenu()
+                    await this.generateMenu()
 
-                    // await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
+                    await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
 
-                    // console.log('\n\n Envios finalizados!!')
+                    console.log('\n\n Envios finalizados!!')
                 }
 
 
