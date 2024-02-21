@@ -64,21 +64,24 @@ export class ConnectionService {
 
     async migrationContacts(){
         const migrationContactsCSV = await readFileAssync(`${cwd()}/contacts.csv`, { encoding: 'utf-8' })
-        const migrationContacts = migrationContactsCSV.split(',').filter(e => Number(e) && e.length >= 8)
+        const migrationContacts = migrationContactsCSV.split(',')
+        .map(e => e.includes(':') ? e.split(':') : e).flat(2)
+        .map(e => e.replace(/[^\d]/g,''))
+        .filter(e => e.length >= 8)
 
         const contactsOnWhatsapp = []
         const existsWhatsapp = await this.connection.onWhatsApp(...migrationContacts)
-        console.log(existsWhatsapp)
 
         for(const contact of existsWhatsapp){
 
             if( contact.exists ){
-                console.log(contact)
                 contactsOnWhatsapp.push(contact.jid.substring(0, 12))
             }
         }
 
-        console.log(contactsOnWhatsapp.length, migrationContacts.length)
+        console.log('Encontrados (Whathsapp):', contactsOnWhatsapp.length)
+        console.log('Total:', migrationContacts.length)
+        console.log('Nao encontrados:', migrationContacts.filter(e => !contactsOnWhatsapp.find(numb => e.includes(numb.substring(4,12)))).length)
 
     }
 
@@ -116,7 +119,7 @@ export class ConnectionService {
 
                     // await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
 
-                    console.log('\n\n Envios finalizados!!')
+                    // console.log('\n\n Envios finalizados!!')
                 }
 
 
