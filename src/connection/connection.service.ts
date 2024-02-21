@@ -59,11 +59,33 @@ export class ConnectionService {
         } catch (error) {
             await writeFile(`${cwd()}/Remover.txt`, '')
         }
+
+    }
+
+    async migrationContacts(){
+        const migrationContactsCSV = await readFileAssync(`${cwd()}/contacts.csv`, { encoding: 'utf-8' })
+        const migrationContacts = migrationContactsCSV.split(',').filter(e => Number(e) && e.length >= 8)
+
+        const contactsOnWhatsapp = []
+        const existsWhatsapp = await this.connection.onWhatsApp(...migrationContacts)
+        console.log(existsWhatsapp)
+
+        for(const contact of existsWhatsapp){
+
+            if( contact.exists ){
+                console.log(contact)
+                contactsOnWhatsapp.push(contact.jid.substring(0, 12))
+            }
+        }
+
+        console.log(contactsOnWhatsapp.length, migrationContacts.length)
+
     }
 
     async connect() {
 
         await this.initFiles()
+
 
         const { state, saveCreds } = await useMultiFileAuthState(`instance`)
         const { version } = await fetchLatestBaileysVersion()
@@ -78,7 +100,6 @@ export class ConnectionService {
         })
 
 
-
         this.connection.ev.process(async events => {
             if (events['connection.update']) {
 
@@ -89,9 +110,11 @@ export class ConnectionService {
 
                 }
                 else if (events['connection.update'].connection == 'open') {
-                    await this.generateMenu()
+                    this.migrationContacts()
 
-                    await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
+                    // await this.generateMenu()
+
+                    // await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
 
                     console.log('\n\n Envios finalizados!!')
                 }
