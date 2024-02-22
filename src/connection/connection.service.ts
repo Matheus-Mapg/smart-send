@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import makeWASocket, { fetchLatestBaileysVersion, useMultiFileAuthState } from '@whiskeysockets/baileys';
 import { readFile } from 'fs';
-import { access, readFile as readFileAssync, writeFile } from 'fs/promises';
+import { access, readFile as readFileAssync, rm, writeFile } from 'fs/promises';
 const mime = require('mime-types')
 import { extname } from 'path';
 import Log from 'pino'
@@ -18,8 +18,6 @@ export class ConnectionService {
     time_per_msg = 5 * 1000
 
     private autoFreshContacts: boolean = true
-
-    private isInitShipping: boolean = false
 
     private isShippingProcessing = false
     private isContactProcessing = false
@@ -62,7 +60,11 @@ export class ConnectionService {
 
     }
 
-    async migrationContacts(){
+    extractNumber(number) {
+        return number.startsWith('55619') || number.startsWith('55629') ? number.substring(5) : number.startsWith('5561') || number.startsWith('5562') ? number.substring(4) : number.startsWith('619') || number.startsWith('629') ? number.substring(3) : number.startsWith('61') || number.startsWith('55') || number.startsWith('62') ? number.substring(2) : number.startsWith('9') ? number.substring(1) : number
+    }
+
+    async migrationContacts() {
         const pathContact = `${cwd()}/contacts.csv`
 
         try {
@@ -72,33 +74,50 @@ export class ConnectionService {
             return
         }
 
+        this.isContactProcessing = true
+
         const migrationContactsCSV = await readFileAssync(pathContact, { encoding: 'utf-8' })
 
         const migrationContacts = migrationContactsCSV.split(',')
-        .map(e => e.includes(':') ? e.split(':') : e).flat(2)
-        .map(e => e.replace(/[^\d]/g,''))
-        .filter(e => e.length >= 8)
+            .map(e => e.includes(':') ? e.split(':') : e).flat(2)
+            .map(e => e.replace(/[^\d]/g, ''))
+            .filter(e => e.length >= 8)
 
         const contactsOnWhatsapp = []
 
         const existsWhatsapp = await this.connection.onWhatsApp(...migrationContacts)
 
-        for(const contact of existsWhatsapp){
+        for (const contact of existsWhatsapp) {
+            const numberWhatsapp = contact.jid.substring(0, 12)
 
-            if( contact.exists ){
-                contactsOnWhatsapp.push(contact.jid.substring(0, 12))
+            if (contact.exists) {
+                contactsOnWhatsapp.push(numberWhatsapp)
+
+                await this.insertContact(numberWhatsapp)
             }
         }
 
-        const notFound = migrationContacts.filter(e => !contactsOnWhatsapp.find(numb => e.includes(numb.substring(4,12))))
+        const notFound = [];
+
+        for (const mi of migrationContacts) {
+            if (!contactsOnWhatsapp.find(e => e.substring(4).includes(this.extractNumber(mi))) && !notFound.find(e => e.includes(mi))) notFound.push(mi)
+
+        }
+
         let message = 'Encontrados (Whathsapp): ' + contactsOnWhatsapp.length
-        + '\nTotal: ' + migrationContacts.length
-        + '\nNao encontrados: ' + notFound.length 
-        + '\n'
+            + '\nTotal: ' + migrationContacts.length
+            + '\nNao encontrados: ' + notFound.length
+            + '\n'
 
-        for(const numb of notFound) message = message.concat('\n\t- ' + numb)
+        for (const numb of notFound) message = message.concat('\n\t- ' + numb)
 
-        await writeFile(`${cwd()}/Importacao.txt`, message)
+        writeFile(`${cwd()}/Importacao.txt`, message)
+        rm(pathContact)
+        await this.syncContacts()
+
+        this.isContactProcessing = false
+
+        await setTimeout(1000)
     }
 
     async connect() {
@@ -156,9 +175,6 @@ export class ConnectionService {
                     await this.insertContact(number)
                 }
 
-
-                // !this.isInitShipping && this.generateMenu()
-
                 this.autoFreshContacts && await this.syncContacts()
 
                 this.isContactProcessing = false
@@ -177,8 +193,6 @@ export class ConnectionService {
                     }
                 }
 
-                // !this.isInitShipping && this.generateMenu()
-
                 this.autoFreshContacts && await this.syncContacts()
 
                 this.isContactProcessing = false
@@ -189,8 +203,6 @@ export class ConnectionService {
 
     async generateMenu() {
         const optionShipping = await this.start.interact()
-
-        this.isInitShipping = true
 
         this.shutdown()
 
@@ -208,12 +220,11 @@ export class ConnectionService {
                 await this.clearProgress()
                 await this.generateMenu()
                 break
-            
+
             case 5: this.stop = true; break
 
         }
 
-        this.isInitShipping = false
         this.isShippingProcessing = false
     }
 
