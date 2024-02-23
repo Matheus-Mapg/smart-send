@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import makeWASocket, { fetchLatestBaileysVersion, useMultiFileAuthState } from '@whiskeysockets/baileys';
-import { readFile } from 'fs';
+import fs, { readFile } from 'fs';
 import { access, readFile as readFileAssync, rm, writeFile } from 'fs/promises';
 const mime = require('mime-types')
 import { extname } from 'path';
@@ -21,6 +21,7 @@ export class ConnectionService {
 
     private isShippingProcessing = false
     private isContactProcessing = false
+    private isMigrationContactProcessing = false
 
     private stop: boolean = false
 
@@ -65,16 +66,20 @@ export class ConnectionService {
     }
 
     async migrationContacts() {
+        await setTimeout(2000)
+
         const pathContact = `${cwd()}/contacts.csv`
+
+        this.isMigrationContactProcessing = true
 
         try {
             await access(pathContact)
         }
         catch (e) {
-            return
-        }
+            this.isMigrationContactProcessing = false
 
-        this.isContactProcessing = true
+            return await this.migrationContacts()
+        }
 
         const migrationContactsCSV = await readFileAssync(pathContact, { encoding: 'utf-8' })
 
@@ -115,9 +120,9 @@ export class ConnectionService {
         rm(pathContact)
         await this.syncContacts()
 
-        this.isContactProcessing = false
+        this.isMigrationContactProcessing = false
 
-        await setTimeout(1000)
+        await this.migrationContacts()
     }
 
     async connect() {
@@ -247,9 +252,9 @@ export class ConnectionService {
 
     async shutdown() {
 
-        this.stop && console.log('... a finalizar', this.isContactProcessing, this.isShippingProcessing, !this.stop)
+        this.stop && console.log('... a finalizar', this.isMigrationContactProcessing, this.isContactProcessing, this.isShippingProcessing, !this.stop)
 
-        if (this.isContactProcessing || this.isShippingProcessing || !this.stop) {
+        if (this.isMigrationContactProcessing || this.isContactProcessing || this.isShippingProcessing || !this.stop) {
 
             await setTimeout(1000)
 
