@@ -21,10 +21,11 @@ export class ConnectionService {
 
     private isShippingProcessing = false
     private isContactProcessing = false
+    private canInsertContacts = true
     private isMigrationContactProcessing = false
 
     private stop: boolean = false
-
+    private isShippingFinished = true
     private clear: boolean = false
 
     constructor(private readonly start: StartSending, private readonly shipping_content: ShippingContent) { }
@@ -156,9 +157,12 @@ export class ConnectionService {
 
                     await this.generateMenu()
 
-                    await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
+                    if(this.isShippingFinished){
+                        await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
+    
+                        console.log('\n\n Envios finalizados!!')
+                    }
 
-                    console.log('\n\n Envios finalizados!!')
                 }
 
 
@@ -240,7 +244,7 @@ export class ConnectionService {
 
             case 1: this.stop = true; break
 
-            case 2: this.stop = true; this.clear = true; break
+            case 2: this.stop = true; /*this.clear = true;*/ break
         }
     }
 
@@ -324,6 +328,8 @@ export class ConnectionService {
     async send_message() {
         this.inProgressMenu()
 
+        this.isShippingFinished = false
+
         const contacts_string = await this.shipping_content.getContacts()
 
         const contacts = contacts_string.split('\n')
@@ -351,6 +357,8 @@ export class ConnectionService {
             this.finshed(number_format)
 
             this.isShippingProcessing = false
+
+            this.isShippingFinished = true
 
             await setTimeout(this.time_per_msg)
 
@@ -360,6 +368,8 @@ export class ConnectionService {
     async send_message_file() {
         this.inProgressMenu()
 
+        this.isShippingFinished = false
+
         const contacts_string = await this.shipping_content.getContacts()
 
         const contacts = contacts_string.split('\n')
@@ -405,12 +415,16 @@ export class ConnectionService {
 
             this.isShippingProcessing = false
 
+            this.isShippingFinished = true
+
             await setTimeout(this.time_per_msg)
         }
     }
 
     async send_file() {
         this.inProgressMenu()
+
+        this.isShippingFinished = false
 
         const contacts_string = await this.shipping_content.getContacts()
 
@@ -449,6 +463,8 @@ export class ConnectionService {
             this.finshed(number_format)
 
             this.isShippingProcessing = false
+
+            this.isShippingFinished = true
 
             await setTimeout(this.time_per_msg)
         }
@@ -494,24 +510,37 @@ export class ConnectionService {
 
     async insertContact(contact) {
 
+        if( !this.canInsertContacts ) {
+            await setTimeout(2000)
+
+            await this.insertContact(contact)
+            return
+        }
+
+        this.canInsertContacts = false
+
         try {
             var update_contacts = await readFileAssync(`${cwd()}/update-contact.json`, { encoding: 'utf-8' })
-
+            
         } catch (error) {
             update_contacts = null
         }
-
+        
         if (update_contacts) {
-
+            
             const contacts_key = JSON.parse(update_contacts)
-
+            
             contacts_key[contact] = new Date()
-
+            
+            await setTimeout(10)
+            
             await writeFile(`${cwd()}/update-contact.json`, JSON.stringify(contacts_key))
         }
         else {
             await writeFile(`${cwd()}/update-contact.json`, JSON.stringify({ [contact]: new Date() }))
         }
+
+        this.canInsertContacts = true
 
     }
 

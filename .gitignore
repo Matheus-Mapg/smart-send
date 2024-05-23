@@ -42,3 +42,4 @@ Documentos/**
 update-contact.json
 progress-envited.json
 *.txt
+backup/*
