@@ -42,11 +42,11 @@ export class StartSending {
             message: 'Deseja parar os envios?',
             choices: [
                 {
-                    name: 'Parar',
+                    name: 'Desligar Sistema',
                     value: 1
                 },
                 {
-                    name: 'Finalizar (Apagar Progresso!!!!!!!)',
+                    name: 'Finalizar e Desligar (Apagar Progresso!!!!!!!)',
                     value: 2
                 }
 

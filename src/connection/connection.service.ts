@@ -9,6 +9,8 @@ import { cwd, exit } from 'process';
 import { ShippingContent } from 'src/shipping-content/shipping-content';
 import { StartSending } from 'src/start-sending/start-sending';
 import { setTimeout } from 'timers/promises';
+import { parse } from 'csv-parse/sync'
+import { compareNumbers, extractPhoneNumbersFromCSV } from 'src/util';
 
 @Injectable()
 export class ConnectionService {
@@ -67,63 +69,51 @@ export class ConnectionService {
     }
 
     async migrationContacts() {
-        await setTimeout(2000)
+        await setTimeout(2000);
 
-        const pathContact = `${cwd()}/contacts.csv`
-
-        this.isMigrationContactProcessing = true
+        const pathContact = `${cwd()}/contacts.csv`;
+        this.isMigrationContactProcessing = true;
 
         try {
-            await access(pathContact)
-        }
-        catch (e) {
-            this.isMigrationContactProcessing = false
-
-            return await this.migrationContacts()
+            await access(pathContact);
+        } catch (e) {
+            this.isMigrationContactProcessing = false;
+            return await this.migrationContacts();
         }
 
-        const migrationContactsCSV = await readFileAssync(pathContact, { encoding: 'utf-8' })
+        const migrationContacts = await extractPhoneNumbersFromCSV(pathContact);
+        const contactsOnWhatsapp = [];
 
-        const migrationContacts = migrationContactsCSV.split(',')
-            .map(e => e.includes(':') ? e.split(':') : e).flat(2)
-            .map(e => e.replace(/[^\d]/g, ''))
-            .filter(e => e.length >= 8)
-
-        const contactsOnWhatsapp = []
-
-        const existsWhatsapp = await this.connection.onWhatsApp(...migrationContacts)
+        const existsWhatsapp = await this.connection.onWhatsApp(...migrationContacts);
 
         for (const contact of existsWhatsapp) {
-            const numberWhatsapp = contact.jid.substring(0, 12)
-
             if (contact.exists) {
-                contactsOnWhatsapp.push(numberWhatsapp)
-
-                await this.insertContact(numberWhatsapp)
+                const numberWhatsapp = contact.jid.split('@')[0]; // pega o número completo antes do sufixo
+                contactsOnWhatsapp.push(numberWhatsapp);
+                await this.insertContact(numberWhatsapp);
             }
         }
 
-        const notFound = [];
+        // Comparação robusta usando sufixos
+        const { found, notFound } = compareNumbers(migrationContacts, contactsOnWhatsapp);
 
-        for (const mi of migrationContacts) {
-            if (!contactsOnWhatsapp.find(e => e.substring(4).includes(this.extractNumber(mi))) && !notFound.find(e => e.includes(mi))) notFound.push(mi)
+        let message =
+            `Encontrados (WhatsApp): ${found.length}\n` +
+            `Total importados do CSV: ${migrationContacts.length}\n` +
+            `Não encontrados (por sufixo de 8 dígitos): ${notFound.length}\n`;
 
+        for (const number of notFound) {
+            message += `\n\t- ${number}`;
         }
 
-        let message = 'Encontrados (Whathsapp): ' + contactsOnWhatsapp.length
-            + '\nTotal: ' + migrationContacts.length
-            + '\nNao encontrados: ' + notFound.length
-            + '\n'
+        await writeFile(`${cwd()}/Importacao.txt`, message);
+        await rm(pathContact);
+        await this.syncContacts();
 
-        for (const numb of notFound) message = message.concat('\n\t- ' + numb)
+        this.isMigrationContactProcessing = false;
 
-        writeFile(`${cwd()}/Importacao.txt`, message)
-        rm(pathContact)
-        await this.syncContacts()
-
-        this.isMigrationContactProcessing = false
-
-        await this.migrationContacts()
+        // Reinicia processo se necessário
+        await this.migrationContacts();
     }
 
     async connect() {
@@ -157,9 +147,9 @@ export class ConnectionService {
 
                     await this.generateMenu()
 
-                    if(this.isShippingFinished){
+                    if (this.isShippingFinished) {
                         await writeFile(`${cwd()}/progress-envited.json`, JSON.stringify({}), { encoding: 'utf-8' })
-    
+
                         console.log('\n\n Envios finalizados!!')
                     }
 
@@ -179,9 +169,9 @@ export class ConnectionService {
                 this.isContactProcessing = true
 
                 for (const iterator of events['contacts.upsert']) {
-                    if(iterator.id.includes('@s.whatsapp.net')) {
+                    if (iterator.id.includes('@s.whatsapp.net')) {
                         const number = iterator.id.split('@')[0]
-    
+
                         await this.insertContact(number)
 
                     }
@@ -513,7 +503,7 @@ export class ConnectionService {
 
     async insertContact(contact) {
 
-        if( !this.canInsertContacts ) {
+        if (!this.canInsertContacts) {
             await setTimeout(2000)
 
             await this.insertContact(contact)
@@ -524,19 +514,19 @@ export class ConnectionService {
 
         try {
             var update_contacts = await readFileAssync(`${cwd()}/update-contact.json`, { encoding: 'utf-8' })
-            
+
         } catch (error) {
             update_contacts = null
         }
-        
+
         if (update_contacts) {
-            
+
             const contacts_key = JSON.parse(update_contacts)
-            
+
             contacts_key[contact] = new Date()
-            
+
             await setTimeout(10)
-            
+
             await writeFile(`${cwd()}/update-contact.json`, JSON.stringify(contacts_key))
         }
         else {
