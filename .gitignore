@@ -45,3 +45,4 @@ progress-envited.json
 backup/*
 contacts.csv
 *.jpg
+.last_commit_hash
