@@ -179,9 +179,12 @@ export class ConnectionService {
                 this.isContactProcessing = true
 
                 for (const iterator of events['contacts.upsert']) {
-                    const number = iterator.id.split('@')[0]
+                    if(iterator.id.includes('@s.whatsapp.net')) {
+                        const number = iterator.id.split('@')[0]
+    
+                        await this.insertContact(number)
 
-                    await this.insertContact(number)
+                    }
                 }
 
                 this.autoFreshContacts && await this.syncContacts()
