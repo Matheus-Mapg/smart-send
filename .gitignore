@@ -48,3 +48,4 @@ backup/*
 .last_commit_hash
 *.tmp
 *.mp4
+*.zip
