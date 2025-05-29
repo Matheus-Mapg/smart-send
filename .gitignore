@@ -43,6 +43,8 @@ update-contact.json
 progress-envited.json
 *.txt
 backup/*
-contacts.csv
+*.csv
 *.jpg
 .last_commit_hash
+*.tmp
+*.mp4
