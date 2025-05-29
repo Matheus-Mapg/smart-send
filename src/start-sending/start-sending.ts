@@ -46,7 +46,7 @@ export class StartSending {
                     value: 1
                 },
                 {
-                    name: 'Finalizar e Desligar (Apagar Progresso!!!!!!!)',
+                    name: 'Finalizar e Desligar (Apaga o Progresso!!!!!!!)',
                     value: 2
                 }
 

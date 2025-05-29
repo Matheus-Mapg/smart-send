@@ -237,7 +237,7 @@ export class ConnectionService {
 
             case 1: this.stop = true; break
 
-            case 2: this.stop = true; /*this.clear = true;*/ break
+            case 2: this.stop = true; this.clear = true; break
         }
     }
 
