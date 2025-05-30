@@ -19,7 +19,7 @@ export class ConnectionService {
 
     time_per_msg = 5 * 1000
 
-    private autoFreshContacts: boolean = true
+    private autoFreshContacts: boolean = false
 
     private isShippingProcessing = false
     private isContactProcessing = false
@@ -29,6 +29,7 @@ export class ConnectionService {
     private stop: boolean = false
     private isShippingFinished = true
     private clear: boolean = false
+    private notEnvited: string[] = []
 
     constructor(private readonly start: StartSending, private readonly shipping_content: ShippingContent) { }
 
@@ -263,8 +264,9 @@ export class ConnectionService {
         this.stop && exit()
     }
 
-    async finshed(number) {
-        console.log(' Finalizado!!')
+    async finshed(number, sucess) {
+        if (sucess) console.log(' Enviado com sucesso!!')
+        else console.log(' Não foi possível enviar!!')
 
         try {
             var progress = await readFileAssync(`${cwd()}/progress-envited.json`, { encoding: 'utf-8' })
@@ -289,8 +291,9 @@ export class ConnectionService {
 
             const timing_enviting = Math.floor(((count_contacts_enviting * this.time_per_msg) / 1000) / 60)
 
-            const count_progress = `Contatos com sucesso ( ${numbers.length} ) último enviado ( ${number} ) finaliza em ( ${timing_enviting} min )` +
-                `\nTotal de Contatos ( ${count_total_contacts.length} )`
+            const count_progress = `Contatos com sucesso ( ${numbers.length} ) Envios com falha (${this.notEnvited.length}) último enviado ( ${number} ) finaliza em ( ${timing_enviting} min )` +
+                `\nTotal de Contatos ( ${count_total_contacts.length} )` +
+                `\n\nContatos com falha ${this.notEnvited.map((item) => `\n${item}`).join('')}`
 
             await writeFile(`${cwd()}/Envio_Andamento.txt`, count_progress)
 
@@ -317,6 +320,31 @@ export class ConnectionService {
 
         return !!progress && (!!JSON.parse(progress)[number])
     }
+    async numberExists(number) {
+        const exists = await this.connection.onWhatsApp(number)
+
+        if (!exists[0]?.exists) {
+            try {
+                var remove_contacts_string = await readFileAssync(`${cwd()}/Remover.txt`, { encoding: 'utf-8' })
+
+            } catch (error) {
+                remove_contacts_string = null
+            }
+
+            if (remove_contacts_string) {
+
+                const remove_contacts = remove_contacts_string.split('\n')
+
+                remove_contacts.map(e => e.replace('\r', ''))
+
+                !remove_contacts.includes(number) && await remove_contacts.push(number)
+
+                await writeFile(`${cwd()}/Remover.txt`, remove_contacts.join('\n'))
+            } else {
+                await writeFile(`${cwd()}/Remover.txt`, number)
+            }
+        }
+    }
 
     async send_message() {
         this.inProgressMenu()
@@ -331,6 +359,8 @@ export class ConnectionService {
 
         for (const number of contacts) {
 
+            let sucess = true
+
             this.isShippingProcessing = true
 
             const number_format = number.replace(/[^0-9]/g, '')
@@ -341,13 +371,23 @@ export class ConnectionService {
 
             this.sendding(number_format)
 
-            const message_text = await this.connection.sendMessage(`${number_format}@s.whatsapp.net`, {
-                text: message
-            })
+            try {
+                const message_text = await this.connection.sendMessage(`${number_format}@s.whatsapp.net`, {
+                    text: message
+                })
 
-            await this.connection.waitForMessage(message_text.key.id)
+                await this.connection.waitForMessage(message_text.key.id)
 
-            this.finshed(number_format)
+            } catch (error) {
+                sucess = false
+
+                this.notEnvited.push(number_format)
+
+                this.numberExists(number_format)
+            }
+
+
+            this.finshed(number_format, sucess)
 
             this.isShippingProcessing = false
 
@@ -375,6 +415,8 @@ export class ConnectionService {
 
         for (const number of contacts) {
 
+            let sucess = true
+
             this.isShippingProcessing = true
 
             const number_format = number.replace(/[^0-9]/g, '')
@@ -385,27 +427,35 @@ export class ConnectionService {
 
             this.sendding(number_format)
 
-            const message_text = await this.connection.sendMessage(`${number_format}@s.whatsapp.net`, {
-                text: message
-            })
+            try {
+                const message_text = await this.connection.sendMessage(`${number_format}@s.whatsapp.net`, {
+                    text: message
+                })
+    
+                await this.connection.waitForMessage(message_text.key.id)
+            } catch (error) {
+                sucess = false
 
-            await this.connection.waitForMessage(message_text.key.id)
+                this.notEnvited.push(number_format)
 
-            for await (const file of files) {
+                this.numberExists(number_format)
+            }
 
+            if (sucess) for await (const file of files) {
+                
                 const file_format = file.replace('\r', '')
-
+                
                 if (!!file_format.trim()) {
                     const path_file = `${cwd()}/${file_format}`
-
+                    
                     const mimetype = mime.lookup(extname(path_file))
-
+                    
                     await this.prepareSendFiles(path_file, mimetype, number_format)
                 }
             }
-
-            this.finshed(number_format)
-
+            
+            this.finshed(number_format, sucess)
+            
             this.isShippingProcessing = false
 
             this.isShippingFinished = true
@@ -429,6 +479,8 @@ export class ConnectionService {
 
         for (const number of contacts) {
 
+            let sucess = true
+
             this.isShippingProcessing = true
 
             const number_format = number.replace(/[^0-9]/g, '')
@@ -439,21 +491,29 @@ export class ConnectionService {
 
             this.sendding(number_format)
 
-            for await (const file of files) {
-
-                const file_format = file.replace('\r', '')
-
-                if (!!file_format.trim()) {
-                    const path_file = `${cwd()}/${file_format}`
-
-                    const mimetype = mime.lookup(extname(path_file))
-
-                    await this.prepareSendFiles(path_file, mimetype, number_format)
+            try {
+                for await (const file of files) {
+    
+                    const file_format = file.replace('\r', '')
+    
+                    if (!!file_format.trim()) {
+                        const path_file = `${cwd()}/${file_format}`
+    
+                        const mimetype = mime.lookup(extname(path_file))
+    
+                        await this.prepareSendFiles(path_file, mimetype, number_format)
+                    }
+    
                 }
+            } catch (error) {
+                sucess = false
 
+                this.notEnvited.push(number_format)
+
+                this.numberExists(number_format)
             }
 
-            this.finshed(number_format)
+            this.finshed(number_format, sucess)
 
             this.isShippingProcessing = false
 
