@@ -49,3 +49,5 @@ backup/*
 *.tmp
 *.mp4
 *.zip
+*.pdf
+*.xlsx
