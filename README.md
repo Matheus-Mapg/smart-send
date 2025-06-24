@@ -1,3 +1,5 @@
+# Desatualizado
+
 # Automação Whatsapp
 
 Esse projeto foi pensado e construído com o intuito de envio de mensagens em massa no Whatsapp Web
